@@ -6,37 +6,42 @@ import re
 import sys
 import uuid
 import warnings
-from os import path, sep, rename
+from os import path, sep, rename, makedirs, environ
 from simpleconf import Config
+from completions.templates import assembleBashWithCommands, assembleBashWithoutCommands, \
+	assembleFishWithCommands, assembleFishWithoutCommands, \
+	assembleZshWithCommands, assembleZshWithoutCommands
 
 
 def checkOptname(optname):
+	"""Send warning if necessary"""
 	if optname.startswith('--') and len(optname) <= 3:
 		warnings.warn('Long option %r specified, but the name has length < 2' % optname)
 	if optname.startswith('-') and not optname.startswith('--') and len(optname) > 2:
 		warnings.warn('Short option %r specified, but the name has length > 1' % optname)
 
 def log(msg, *args):
+	"""simple log on the screen"""
 	sys.stderr.write('- %s\n' % (msg % args))
-
-def pushcode(ret, msg, level = 0):
-	ret.append('%s%s' % ('\t' * level, msg))
 
 class CompletionsLoadError(Exception):
 	"""Raises while failed to load completions from configuration file"""
 
 class Command:
-
+	"""A command"""
 	def __init__(self, name, desc, options = None):
 		self.name = name
 		self.desc = desc
 		self.options = options or {}
 
 	def addOption(self, opt, desc):
+		"""
+		Add option to a command
+		"""
 		self.options[opt] = desc
 
 class Completions(Command):
-
+	"""Completions class"""
 	def __init__(self, name = None, desc = None, options = None, fullpath = None):
 		super(Completions, self).__init__(name, desc, options)
 		self.name = name or sys.argv[0]
@@ -51,134 +56,16 @@ class Completions(Command):
 
 	@property
 	def availname(self):
+		"""Make an available for function name"""
 		return re.sub(r'[^\w_]+', '_', path.basename(self.name))
 
 	def addCommand(self, name, desc, options = None):
+		"""Add a command to the completions"""
 		self.commands[name] = Command(name, desc, options)
 
 	def command(self, name):
+		"""Get the command object by given name"""
 		return self.commands[name]
-
-	def _generateBashWithoutCommands(self):
-		pass
-
-	def _generateBashWithCommands(self):
-		complete_function = '_%s_%s_complete' % (self.availname, self.uid)
-		ret = []
-		pushcode(ret, '%s() {' % complete_function)
-		pushcode(ret, 'local cur script coms opts com', 1)
-		pushcode(ret, 'COMPREPLY=()', 1)
-		pushcode(ret, '_get_comp_words_by_ref -n : cur words', 1)
-		pushcode(ret, '# for an alias, get the real script behind it', 1)
-		pushcode(ret, r'if [[ $(type -t ${words[0]}) == "alias" ]]; then', 1)
-		pushcode(ret, r'script=$(alias ${words[0]} | sed -E "s/alias ${words[0]}=\'(.*)\'/\1/")', 2)
-		pushcode(ret, 'else', 1)
-		pushcode(ret, r'script=${words[0]}', 2)
-		pushcode(ret, 'fi', 1)
-		pushcode(ret, '# lookup for command', 1)
-		pushcode(ret, r'for word in ${words[@]:1}; do', 1)
-		pushcode(ret, 'if [[ $word != -* ]]; then', 2)
-		pushcode(ret, 'com=$word', 3)
-		pushcode(ret, 'break', 3)
-		pushcode(ret, 'fi', 2)
-		pushcode(ret, 'done', 1)
-		pushcode(ret, '# completing for an option', 1)
-		pushcode(ret, 'if [[ ${cur} == --* ]] ; then', 1)
-		pushcode(ret, '	opts="--ansi --help --no-ansi --no-interaction --quiet --verbose --version"', 1)
-
-		pushcode(ret, '	case "$com" in', 2)
-
-		pushcode(ret, '		(about)', 3)
-		pushcode(ret, '		opts="${opts} "', 3)
-		pushcode(ret, '		;;', 3)
-
-		pushcode(ret, '		(add)', 3)
-		pushcode(ret, '		opts="${opts} --allow-prereleases --dev --dry-run --extras --git --optional --path --platform --python"', 3)
-		pushcode(ret, '		;;', 3)
-
-		pushcode(ret, '	esac', 2)
-
-		pushcode(ret, '	COMPREPLY=($(compgen -W "${opts}" -- ${cur}))', 2)
-		pushcode(ret, '	__ltrim_colon_completions "$cur"', 2)
-
-		pushcode(ret, '	return 0;', 2)
-		pushcode(ret, 'fi', 1)
-
-		pushcode(ret, '# completing for a command', 1)
-		pushcode(ret, 'if [[ $cur == $com ]]; then', 1)
-		pushcode(ret, '	coms="about add build cache:clear check config debug:info debug:resolve develop help init install list lock new publish remove run script search self:update shell show update version"', 2)
-
-		pushcode(ret, '	COMPREPLY=($(compgen -W "${coms}" -- ${cur}))', 2)
-		pushcode(ret, '	__ltrim_colon_completions "$cur"', 2)
-
-		pushcode(ret, '	return 0', 2)
-		pushcode(ret, 'fi', 1)
-		pushcode(ret, '}')
-		pushcode(ret, 'complete -o default -F %s %s' % (complete_function, self.name))
-		if self.fullpath:
-			pushcode(ret, 'complete -o default -F %s %s' % (complete_function, self.fullpath))
-		return '\n'.join(ret)
-
-	def _generateFishWithCommands(self):
-		'''
-		Generate completions for fish with subcommands:
-		'''
-		command_check_function = '__fish_%s_%s_complete_no_subcommand' % (self.availname, self.uid)
-		ret = []
-		pushcode(ret, "function %s" % command_check_function)
-		pushcode(ret, "for i in (commandline -opc)", 1)
-		pushcode(ret, "if contains -- $i %s" % ' '.join(self.commands.keys()), 2)
-		pushcode(ret, "return 1", 3)
-		pushcode(ret, "end", 2)
-		pushcode(ret, "end", 1)
-		pushcode(ret, "return 0", 1)
-		pushcode(ret, "end")
-
-		pushcode(ret, "")
-		pushcode(ret, "# general options")
-		for key, val in self.options.items():
-			checkOptname(key)
-			key = "-l %r" % key[2:] if key.startswith('--') else '-s %r' % key[1:]
-			pushcode(ret, "complete -c %r -n %r %s -d %r" % (
-				self.name, command_check_function, key, val))
-
-		pushcode(ret, "")
-		pushcode(ret, "# commands")
-		for key, val in self.commands.items():
-			pushcode(ret, "complete -c %r -f -n %r -a %r -d %r" % (
-				self.name, command_check_function, key, val.desc))
-
-		pushcode(ret, "")
-		pushcode(ret, "# command options")
-
-		for key, val in self.commands.items():
-			pushcode(ret, "# %s" % key)
-			for opt, optdesc in val.options.items():
-				checkOptname(key)
-				opt = "-l %r" % opt[2:] if opt.startswith('--') else '-s %r' % opt[1:]
-				pushcode(ret, "complete -c %r -A -n '__fish_seen_subcommand_from %s' %s -d %r" % (
-					self.name, key, opt, optdesc))
-		return '\n'.join(ret)
-
-	def _generateFishWithoutCommands(self):
-		ret = []
-		def pushcode(ret, msg, level = 0):
-			ret.append('%s%s' % ('\t' * level, msg))
-
-		pushcode(ret, "")
-		pushcode(ret, "# options")
-		for key, val in self.options.items():
-			checkOptname(key)
-			key = "-l %r" % key[2:] if key.startswith('--') else '-s %r' % key[1:]
-			pushcode(ret, "complete -c %r %s -d %r" % (self.name, key, val))
-
-		return '\n'.join(ret)
-
-	def _generateZshWithCommands(self):
-		pass
-
-	def _generateZshWithoutCommands(self):
-		pass
 
 	def _automateFish(self, source):
 		compfile = path.expanduser('~/.config/fish/completions/%s.fish' % self.name)
@@ -192,35 +79,152 @@ class Completions(Command):
 			fcomp.write(source)
 		log('Done, you may need to restart your shell in order for the changes to take effect.')
 
-	def generateBash(self):
-		if self.commands:
-			return self._generateBashWithCommands()
-		return self._generateBashWithoutCommands()
+	def _automateBash(self, source):
+		compfile = path.expanduser('~/.bash_completion.d/%s.bash-completion' % self.name)
+		compdir  = path.dirname(compfile)
+		backfile = compfile + '.completions.bak'
+		if not path.isdir(compdir):
+			log('User completion directory does not exist.')
+			log('Try to create it: %s' % compdir)
+			makedirs(compdir)
+		entryfile = path.expanduser('~/.bashrc')
+		entrybak  = entryfile + '.completions.bak'
+		with open(entryfile, 'r') as fentry:
+			entry = fentry.read()
+		# detect if we've already add entry point
+		entry_point = '\n' + \
+					  '### Start adding entry point by completions, do NOT modify ###\n' + \
+					  'for bcfile in %s/*.bash-completion; do\n' % compdir + \
+					  '	[ -f "$bcfile" ] && . $bcfile\n' + \
+					  'done\n' + \
+					  '### End adding entry point by completions ###\n'
 
-	def generateFish(self):
-		if self.commands:
-			return self._generateFishWithCommands()
-		return self._generateFishWithoutCommands()
+		if entry_point not in entry:
+			log('Backup entry point file: %s' % entryfile)
+			log('To: %s' % entrybak)
+			with open(entryfile, 'a+') as fentry, open(entrybak, 'w') as fbak:
+				fbak.write(fentry.read())
+				log('Add entry point')
+				fentry.write(entry_point)
 
-	def generateZsh(self):
+		if path.isfile(compfile):
+			log('Completion file exists: %r', compfile)
+			log('Back it up to: %r', backfile)
+			rename(compfile, backfile)
+		log('Writing completion code to: %r', compfile)
+		with open(compfile, 'w') as fcomp:
+			fcomp.write(source)
+		log('Done, you may need to restart your shell in order for the changes to take effect.')
+
+
+	def _automateZsh(self, source):
+		compfile = path.expanduser('~/.zsh-completions/_%s' % self.name)
+		compdir  = path.dirname(compfile)
+		backfile = path.expanduser('~/.zsh-completions/.%s.completions.bak' % self.name)
+		if not path.isdir(compdir):
+			log('User completion directory does not exist.')
+			log('Try to create it: %s' % compdir)
+			makedirs(compdir, mode = 0o755)
+		entryfile = path.expanduser('~/.zshrc')
+		entrybak  = entryfile + '.completions.bak'
+		with open(entryfile, 'r') as fentry:
+			entry = fentry.read()
+		# detect if we've already add entry point
+
+		if 'compinit' in entry:
+			entry_point = '\n' + \
+				'### Start adding entry point by completions, do NOT modify ###\n' + \
+				'fpath+=%s\n' % compdir + \
+				'### End adding entry point by completions ###\n'
+		else:
+			log('compinstall not found in %s' % entryfile)
+			log('Add it (to disable: add `#cominit`).')
+			entry_point = '\n' + \
+				'### Start adding entry point by completions ###\n' + \
+				'zstyle :compinstall filename %r\n' % entryfile + \
+				'autoload -Uz compinit\n' + \
+				'fpath+=%s\n' % compdir + \
+				'# blow may take some time to start, you may want to comment it out\n' + \
+				'# and set up the compinit by yourself.\n' + \
+				'rm -f ~/.zcompdump; compinit -C\n' + \
+				'### End adding entry point by completions ###\n'
+
+		if '# Start adding entry point by completions' not in entry:
+			log('Backup entry point file: %s' % entryfile)
+			log('To: %s' % entrybak)
+			with open(entryfile, 'r') as fentry, open(entrybak, 'w') as fbak:
+				entrysrc = fentry.read()
+				fbak.write(entrysrc)
+			log('Add entry point')
+
+			compinit_index = None
+			entrylines = entrysrc.splitlines()
+			for i, line in enumerate(reversed(entrylines)):
+				if 'cominit' in line and not line.startswith('#'):
+					compinit_index = i
+					break
+			if compinit_index is None:
+				entrysrc += entry_point
+			else:
+				entrylines.insert(compinit_index, entry_point)
+				entrysrc = '\n'.join(entrylines)
+			with open(entryfile, 'w') as fentry:
+				fentry.write(entrysrc)
+
+		if path.isfile(compfile):
+			log('Completion file exists: %r', compfile)
+			log('Back it up to: %r', backfile)
+			rename(compfile, backfile)
+		log('Writing completion code to: %r', compfile)
+		with open(compfile, 'w') as fcomp:
+			fcomp.write(source)
+		log('Done, you may need to restart your shell in order for the changes to take effect.')
+
+	def _generateBash(self):
 		if self.commands:
-			return self._generateZshWithCommands()
-		return self._generateZshWithoutCommands()
+			return assembleBashWithCommands(self.name,
+				'_%s_%s_complete' % (self.availname, self.uid),
+				self.options, self.commands, self.fullpath)
+		return assembleBashWithoutCommands(self.name,
+			'_%s_%s_complete' % (self.availname, self.uid),
+			self.options, self.fullpath)
+
+	def _generateFish(self):
+		if self.commands:
+			return assembleFishWithCommands(self.name,
+				'_%s_%s_complete' % (self.availname, self.uid),
+				self.options, self.commands, self.fullpath)
+		return assembleFishWithoutCommands(self.name,
+			'_%s_%s_complete' % (self.availname, self.uid),
+			self.options, self.fullpath)
+
+	def _generateZsh(self):
+		if self.commands:
+			return assembleZshWithCommands(self.name,
+				'_%s_%s_complete' % (self.availname, self.uid),
+				self.options, self.commands, self.fullpath)
+		return assembleZshWithoutCommands(self.name,
+			'_%s_%s_complete' % (self.availname, self.uid),
+			self.options, self.fullpath)
 
 	def generate(self, shell, auto = False):
+		"""Generate the completion code"""
 		self.uid = str(uuid.uuid3(uuid.NAMESPACE_DNS, self.name)).split('-')[-1]
+		if shell == 'auto':
+			shell = re.sub(r'[^\w].*', '', path.basename(environ['SHELL']))
+			return self.generate(shell, auto)
 		if shell == 'fish':
-			source = self.generateFish()
+			source = self._generateFish()
 			if not auto:
 				return source
 			self._automateFish(source)
 		elif shell == 'bash':
-			source = self.generateBash()
+			source = self._generateBash()
 			if not auto:
 				return source
 			self._automateBash(source)
 		elif shell == 'zsh':
-			source = self.generateZsh()
+			source = self._generateZsh()
 			if not auto:
 				return source
 			self._automateZsh(source)
@@ -228,6 +232,7 @@ class Completions(Command):
 			raise ValueError('Currently only bash, fish and zsh supported.')
 
 	def load(self, dict_var):
+		"""Load commands and options from a dict"""
 		# integrity check
 		if 'program' not in dict_var:
 			raise CompletionsLoadError("No 'program' key found.")
@@ -253,17 +258,22 @@ class Completions(Command):
 			)
 
 	def loadFile(self, compfile):
+		"""Load commands and options from a configuration file"""
 		config = Config(with_profile = False)
 		config._load(compfile)
 		self.load(config)
 
-if __name__ == '__main__':
+def main():
+	"""Entry point of the script"""
 	from pyparam import commands
-	commands._.shell.desc     = 'The shell, one of bash, fish and zsh.'
-	commands._.shell.required = True
+	commands._.shell          = 'auto'
+	commands._.shell.desc     = [
+		'The shell, one of bash, fish, zsh and auto.',
+		'Shell will be detected from `os.environ["SHELL"]` if auto.',
+	]
 	commands._.auto           = False
 	commands._.auto.desc      = [
-		'Automatically write completions to destination file:',
+		'Automatically write completions to destination file.',
 		'Bash: `~/bash_completion.d/<name>.bash-completion`',
 		'  Also try to source it in ~/.bash_completion',
 		'Fish: `~/.config/fish/completions/<name>.fish`',
@@ -275,7 +285,7 @@ if __name__ == '__main__':
 	commands.self                 = 'Generate completions for myself.'
 	commands.self._hbald          = False
 	commands.generate             = 'Generate completions from configuration files'
-	commands.generate.config.desc = [
+	commands.generate.config.desc = [ # pylint: disable=no-member
 		'The configuration file. Scheme should be aligned following json data:',
 		'{',
 		'	"program": {',
@@ -299,19 +309,21 @@ if __name__ == '__main__':
 		'',
 		'Configuration file that is supported by `python-simpleconf` is supported.'
 	]
-	commands.generate.config.required = True
-	commands.generate.c = commands.generate.config
-	command, options, coptions = commands._parse()
+	commands.generate.config.required = True       # pylint: disable=no-member
+	commands.generate.c = commands.generate.config # pylint: disable=no-member
+	command, options, goptions = commands._parse()
 
-	auto = coptions['auto']
+	auto = goptions['auto']
 	if command == 'self':
-		source = commands._complete(coptions['shell'], auto = auto)
+		source = commands._complete(goptions['shell'], auto = auto)
 		if not auto:
 			print(source)
 	else:
 		completions = Completions()
 		completions.loadFile(options['config'])
-		source = completions.generate(coptions['shell'], auto = auto)
+		source = completions.generate(goptions['shell'], auto = auto)
 		if not auto:
 			print(source)
 
+if __name__ == '__main__':
+	main()

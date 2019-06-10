@@ -22,7 +22,7 @@ if [[ $(type -t _get_comp_words_by_ref) == "" ]]; then
 				prev)  vprev=prev ;;
 				cword) vcword=cword ;;
 				words) vwords=words ;;
-				*) echo "bash_completion: $FUNCNAME: \`${{!OPTIND}}':" \
+				*) echo "bash_completion: $FUNCNAME: \\`${{!OPTIND}}':" \\
 					"unknown argument" >&2; return 1 ;;
 			esac
 			(( OPTIND += 1 ))
@@ -54,7 +54,7 @@ if [[ $(type -t __ltrim_colon_completions) == "" ]]; then
 	}}
 fi
 
-{complete_function}() {
+{complete_function}() {{
 	local cur script coms opts com
 	COMPREPLY=()
 	_get_comp_words_by_ref -n : cur words
@@ -82,7 +82,7 @@ fi
 {command_block}
 		esac
 
-		COMPREPLY=($(compgen -W "${{opts}}" -- ${cur}))
+		COMPREPLY=($(compgen -W "${{opts}}" -- ${{cur}}))
 		__ltrim_colon_completions "$cur"
 
 		return 0;
@@ -97,7 +97,7 @@ fi
 
 		return 0
 	fi
-}
+}}
 
 {exclude_block}
 """
@@ -134,7 +134,7 @@ if [[ $(type -t _get_comp_words_by_ref) == "" ]]; then
 				prev)  vprev=prev ;;
 				cword) vcword=cword ;;
 				words) vwords=words ;;
-				*) echo "bash_completion: $FUNCNAME: \`${{!OPTIND}}':" \
+				*) echo "bash_completion: $FUNCNAME: \\`${{!OPTIND}}':" \\
 					"unknown argument" >&2; return 1 ;;
 			esac
 			(( OPTIND += 1 ))
@@ -166,7 +166,7 @@ if [[ $(type -t __ltrim_colon_completions) == "" ]]; then
 	}}
 fi
 
-{complete_function}() {
+{complete_function}() {{
 	local cur script coms opts com
 	COMPREPLY=()
 	_get_comp_words_by_ref -n : cur words
@@ -182,24 +182,24 @@ fi
 	if [[ ${{cur}} == -* ]] ; then
 		opts="{options}"
 
-		COMPREPLY=($(compgen -W "${{opts}}" -- ${cur}))
+		COMPREPLY=($(compgen -W "${{opts}}" -- ${{cur}}))
 		__ltrim_colon_completions "$cur"
 
 		return 0;
 	fi
-}
+}}
 
 {exclude_block}
 """
 
 FISH_WITH_COMMANDS = """
 function {no_command_function}
-        for i in (commandline -opc)
-                if contains -- $i self generate
-                        return 1
-                end
-        end
-        return 0
+		for i in (commandline -opc)
+				if contains -- $i self generate
+						return 1
+				end
+		end
+		return 0
 end
 
 # global options
@@ -212,178 +212,107 @@ end
 {command_option_block}
 """
 
-FISH_WITH_COMMANDS_GLOBAL_SHORT_OPTION = "complete -c {name!r} -n {no_command_function!r} -s {option!r} -d {desc!r}"
-FISH_WITH_COMMANDS_GLOBAL_LONG_OPTION = "complete -c {name!r} -n {no_command_function!r} -l {option!r} -d {desc!r}"
-FISH_WITH_COMMANDS_COMMAND = "complete -c {name!r} -f -n {no_command_function!r} -a {command!r} -d {desc!r}"
-FISH_WITH_COMMANDS_COMMAND_SHORT_OPTION = "complete -c {name!r} -A -n '__fish_seen_subcommand_from {command}' -s {option!r} -d {desc!r}"
-FISH_WITH_COMMANDS_COMMAND_LONG_OPTION = "complete -c {name!r} -A -n '__fish_seen_subcommand_from {command}' -l {option!r} -d {desc!r}"
+FISH_WITH_COMMANDS_GLOBAL_SHORT_OPTION = \
+	"complete -c {name!r} -n {no_command_function!r} -s {option!r} -d {desc!r}"
+FISH_WITH_COMMANDS_GLOBAL_LONG_OPTION = \
+	"complete -c {name!r} -n {no_command_function!r} -l {option!r} -d {desc!r}"
+FISH_WITH_COMMANDS_COMMAND = \
+	"complete -c {name!r} -f -n {no_command_function!r} -a {command!r} -d {desc!r}"
+FISH_WITH_COMMANDS_COMMAND_SHORT_OPTION = \
+	"complete -c {name!r} -A -n '__fish_seen_subcommand_from {command}' -s {option!r} -d {desc!r}"
+FISH_WITH_COMMANDS_COMMAND_LONG_OPTION = \
+	"complete -c {name!r} -A -n '__fish_seen_subcommand_from {command}' -l {option!r} -d {desc!r}"
 
 FISH_WITHOUT_COMMANDS = """
 {option_block}
 """
 
 FISH_WITHOUT_COMMANDS_SHORT_OPTION = "complete -c {name!r} -s {option!r} -d {desc!r}"
-FISH_WITHOUT_COMMANDS_LONG_OPTION = "complete -c {name!r} -s {option!r} -d {desc!r}"
+FISH_WITHOUT_COMMANDS_LONG_OPTION = "complete -c {name!r} -l {option!r} -d {desc!r}"
 
-ZSH_WITH_COMMANDS = """
-#compdef poetry
+ZSH_WITH_COMMANDS = """#compdef {name}
 
-_poetry_7a8fd1e1bf4c5afe_complete()
-{
-    local state com cur
+{complete_function}() {{
+	local state com cur
 
-    cur=${words[${#words[@]}]}
+	cur=${{words[${{#words[@]}}]}}
 
-    # lookup for command
-    for word in ${words[@]:1}; do
-        if [[ $word != -* ]]; then
-            com=$word
-            break
-        fi
-    done
+	# lookup for command
+	for word in ${{words[@]:1}}; do
+		if [[ $word != -* ]]; then
+			com=$word
+			break
+		fi
+	done
 
-    if [[ ${cur} == --* ]]; then
-        state="option"
-        opts=("--ansi:Force ANSI output" "--help:Display this help message" "--no-ansi:Disable ANSI output" "--no-interaction:Do not ask any interactive question" "--quiet:Do not output any message" "--verbose:Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug" "--version:Display this application version")
-    elif [[ $cur == $com ]]; then
-        state="command"
-        coms=("about:Short information about Poetry." "add:Add a new dependency to pyproject.toml." "build:Builds a package, as a tarball and a wheel by default." "cache\:clear:Clears poetry\'s cache." "check:Checks the validity of the pyproject.toml file." "config:Sets/Gets config options." "debug\:info:Shows debug information." "debug\:resolve:Debugs dependency resolution." "develop:Installs the current project in development mode. \(Deprecated\)" "help:Displays help for a command" "init:Creates a basic pyproject.toml file in the current directory." "install:Installs the project dependencies." "list:Lists commands" "lock:Locks the project dependencies." "new:Creates a new Python project at <path\>" "publish:Publishes a package to a remote repository." "remove:Removes a package from the project dependencies." "run:Runs a command in the appropriate environment." "script:Executes a script defined in pyproject.toml. \(Deprecated\)" "search:Searches for packages on remote repositories." "self\:update:Updates poetry to the latest version." "shell:Spawns a shell within the virtual environment." "show:Shows information about packages." "update:Update dependencies as according to the pyproject.toml file." "version:Bumps the version of the project.")
-    fi
+	if [[ ${{cur}} == -* ]]; then
+		state="option"
+		opts=({global_options})
+	elif [[ $cur == $com ]]; then
+		state="command"
+		coms=({commands})
+	fi
 
-    case $state in
-        (command)
-            _describe 'command' coms
-        ;;
-        (option)
-            case "$com" in
+	case $state in
+		(command)
+			_describe 'command' coms
+		;;
+		(option)
+			case "$com" in
+{command_block}
+			esac
 
-            (about)
-            opts+=()
-            ;;
+			_describe 'option' opts
+		;;
+		*)
+			# fallback to file completion
+			_arguments '*:file:_files'
+	esac
+}}
 
-            (add)
-            opts+=("--allow-prereleases:Accept prereleases." "--dev:Add package as development dependency." "--dry-run:Outputs the operations but will not execute anything \(implicitly enables --verbose\)." "--extras:Extras to activate for the dependency." "--git:The url of the Git repository." "--optional:Add as an optional dependency." "--path:The path to a dependency." "--platform:Platforms for which the dependencies must be installed." "--python:Python version\( for which the dependencies must be installed.")
-            ;;
-
-            (build)
-            opts+=("--format:Limit the format to either wheel or sdist.")
-            ;;
-
-            (cache:clear)
-            opts+=("--all:Clear all caches.")
-            ;;
-
-            (check)
-            opts+=()
-            ;;
-
-            (config)
-            opts+=("--list:List configuration settings" "--unset:Unset configuration setting")
-            ;;
-
-            (debug:info)
-            opts+=()
-            ;;
-
-            (debug:resolve)
-            opts+=("--extras:Extras to activate for the dependency." "--install:Show what would be installed for the current system." "--python:Python version\(s\) to use for resolution." "--tree:Displays the dependency tree.")
-            ;;
-
-            (develop)
-            opts+=()
-            ;;
-
-            (help)
-            opts+=("--format:The output format \(txt, json, or md\)" "--raw:To output raw command help")
-            ;;
-
-            (init)
-            opts+=("--author:Author name of the package" "--dependency:Package to require with an optional version constraint, e.g. requests:\^2.10.0 or requests=2.11.1" "--description:Description of the package" "--dev-dependency:Package to require for development with an optional version constraint, e.g. requests:\^2.10.0 or requests=2.11.1" "--license:License of the package" "--name:Name of the package")
-            ;;
-
-            (install)
-            opts+=("--develop:Install given packages in development mode." "--dry-run:Outputs the operations but will not execute anything \(implicitly enables --verbose\)." "--extras:Extra sets of dependencies to install." "--no-dev:Do not install dev dependencies.")
-            ;;
-
-            (list)
-            opts+=("--format:The output format \(txt, json, or md\)" "--raw:To output raw command list")
-            ;;
-
-            (lock)
-            opts+=()
-            ;;
-
-            (new)
-            opts+=("--name:Set the resulting package name." "--src:Use the src layout for the project.")
-            ;;
-
-            (publish)
-            opts+=("--build:Build the package before publishing." "--password:The password to access the repository." "--repository:The repository to publish the package to." "--username:The username to access the repository.")
-            ;;
-
-            (remove)
-            opts+=("--dev:Removes a package from the development dependencies." "--dry-run:Outputs the operations but will not execute anything \(implicitly enables --verbose\).")
-            ;;
-
-            (run)
-            opts+=()
-            ;;
-
-            (script)
-            opts+=()
-            ;;
-
-            (search)
-            opts+=("--only-name:Search only in name.")
-            ;;
-
-            (self:update)
-            opts+=("--preview:Install prereleases.")
-            ;;
-
-            (shell)
-            opts+=()
-            ;;
-
-            (show)
-            opts+=("--all:Show all packages \(even those not compatible with current system\)." "--latest:Show the latest version." "--no-dev:Do not list the dev dependencies." "--outdated:Show the latest version but only for packages that are outdated." "--tree:List the dependencies as a tree.")
-            ;;
-
-            (update)
-            opts+=("--dry-run:Outputs the operations but will not execute anything \(implicitly enables --verbose\)." "--lock:Do not perform install \(only update the lockfile\)." "--no-dev:Do not install dev dependencies.")
-            ;;
-
-            (version)
-            opts+=()
-            ;;
-
-            esac
-
-            _describe 'option' opts
-        ;;
-        *)
-            # fallback to file completion
-            _arguments '*:file:_files'
-    esac
-}
-
-_poetry_7a8fd1e1bf4c5afe_complete "$@"
-compdef _poetry_7a8fd1e1bf4c5afe_complete /data2/junwenwang/shared/tools/miniconda3/bin/poetry
+{complete_function} "$@"
+compdef {complete_function} {fullpath}
 """
 
-def assembleBashWithCommands(name, complete_function, global_options, commands):
-	if not isinstance(name, list):
-		name = [name]
+ZSH_WITHOUT_COMMANDS = """#compdef {name}
+
+{complete_function}() {{
+	local cur
+
+	cur=${{words[${{#words[@]}}]}}
+
+	if [[ ${{cur}} == -* ]]; then
+		state="option"
+		opts=({options})
+		_describe 'option' opts
+	else
+		# fallback to file completion
+		_arguments '*:file:_files'
+	fi
+}}
+
+{complete_function} "$@"
+compdef {complete_function} {fullpath}
+"""
+
+ZSH_WITH_COMMANDS_COMMAND = """
+			({command})
+			opts=({options})
+			;;
+"""
+
+def assembleBashWithCommands(name, complete_function, global_options, commands, fullpath = None):
 	command_block = [
 		BASH_WITH_COMMANDS_COMMAND.format(
 			command = command.name,
 			options = ' '.join(command.options.keys())
 		) for command in commands.values()
 	]
-	exclude_block = [
-		BASH_EXECUTE.format(complete_function = complete_function, name = n)
-		for n in name
-	]
+	exclude_block = [BASH_EXECUTE.format(complete_function = complete_function, name = name)]
+	if fullpath:
+		exclude_block.append([
+			BASH_EXECUTE.format(complete_function = complete_function, name = fullpath)])
+
 	return BASH_WITH_COMMANDS.format(
 		complete_function = complete_function,
 		global_options    = ' '.join(global_options.keys()),
@@ -392,24 +321,24 @@ def assembleBashWithCommands(name, complete_function, global_options, commands):
 		exclude_block     = '\n'.join(exclude_block)
 	)
 
-def assembleBashWithoutCommands(name, complete_function, options):
-	exclude_block = [
-		BASH_EXECUTE.format(complete_function = complete_function, name = n)
-		for n in name
-	]
+def assembleBashWithoutCommands(name, complete_function, options, fullpath = None):
+	exclude_block = [BASH_EXECUTE.format(complete_function = complete_function, name = name)]
+	if fullpath:
+		exclude_block.append([
+			BASH_EXECUTE.format(complete_function = complete_function, name = fullpath)])
 	return BASH_WITHOUT_COMMANDS.format(
 		complete_function = complete_function,
-		options           = ' '.join(options.keys())
+		options           = ' '.join(options.keys()),
 		exclude_block     = '\n'.join(exclude_block)
 	)
 
-def assembleFishWithCommands(name, no_command_function, global_options, commands):
+def assembleFishWithCommands(name, no_command_function, global_options, commands, fullpath = None):
 	global_option_block = [
 		(FISH_WITH_COMMANDS_GLOBAL_LONG_OPTION if option.startswith('--') \
 			else FISH_WITH_COMMANDS_GLOBAL_SHORT_OPTION).format(
 			name                = name,
 			no_command_function = no_command_function,
-			option              = option.lstrip(':'),
+			option              = option.lstrip('-'),
 			desc                = desc
 		) for option, desc in global_options.items()
 	]
@@ -425,11 +354,11 @@ def assembleFishWithCommands(name, no_command_function, global_options, commands
 		(FISH_WITH_COMMANDS_COMMAND_LONG_OPTION if option.startswith('--') \
 			else FISH_WITH_COMMANDS_COMMAND_SHORT_OPTION).format(
 			name    = name,
-			command = command,
+			command = cmdname,
 			option  = option.lstrip('-'),
 			desc    = desc
 		)
-		for command in commands.values()
+		for cmdname, command in commands.items()
 		for option, desc in command.options.items()
 	]
 	return FISH_WITH_COMMANDS.format(
@@ -439,17 +368,49 @@ def assembleFishWithCommands(name, no_command_function, global_options, commands
 		command_option_block = '\n'.join(command_option_block),
 	)
 
-def assembleFishWithoutCommands(name, no_command_function, options):
+def assembleFishWithoutCommands(name, no_command_function, options, fullpath = None):
 	option_block = [
-		(FISH_WITHOUT_COMMANDS_COMMAND_LONG_OPTION if option.startswith('--') \
-			else FISH_WITHOUT_COMMANDS_COMMAND_SHORT_OPTION).format(
+		(FISH_WITHOUT_COMMANDS_LONG_OPTION if option.startswith('--') \
+			else FISH_WITHOUT_COMMANDS_SHORT_OPTION).format(
 			name   = name,
 			option = option.lstrip('-'),
 			desc   = desc
 		)
 		for option, desc in options.items()
 	]
+	option_block.insert(0, '# ' + no_command_function)
 	return FISH_WITHOUT_COMMANDS.format(
 		option_block = '\n'.join(option_block)
 	)
 
+def _escapeColon(name):
+	"""Escape colon in command/option name for zsh"""
+	return name.replace(':', '\\:')
+
+def assembleZshWithCommands(name, complete_function, global_options, commands, fullpath = None):
+	command_block = [
+		ZSH_WITH_COMMANDS_COMMAND.format(
+			command = comname,
+			options = ' '.join(repr(_escapeColon(option) + ':' + _escapeColon(desc))
+			for option, desc in command.options.items())
+		) for comname, command in commands.items()
+	]
+	return ZSH_WITH_COMMANDS.format(
+		name              = name,
+		fullpath          = fullpath,
+		complete_function = complete_function,
+		command_block     = '\n'.join(command_block),
+		global_options    = ' '.join(repr(_escapeColon(option) + ':' + _escapeColon(desc))
+			for option, desc in global_options.items()),
+		commands          = ' '.join(repr(_escapeColon(comname) + ':' + _escapeColon(command.desc))
+			for comname, command in commands.items()),
+	)
+
+def assembleZshWithoutCommands(name, complete_function, options, fullpath = None):
+	return ZSH_WITHOUT_COMMANDS.format(
+		name              = name,
+		fullpath          = fullpath,
+		complete_function = complete_function,
+		options           = ' '.join("'%s'" % (_escapeColon(option) + ':' + _escapeColon(desc))
+			for option, desc in options.items())
+	)
