@@ -10,6 +10,8 @@ repository = "https://github.com/pwwang/completions"
 
 [tool.poetry.dependencies]
 python = "^3.4"
+colorama = "*"
+python-simpleconf = "^0.1.3"
 pyparam = { version = "^0.1.2", optional = true }
 
 [tool.poetry.scripts]
