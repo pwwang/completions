@@ -216,12 +216,16 @@ FISH_WITH_COMMANDS_GLOBAL_SHORT_OPTION = \
 	"complete -c {name!r} -n {no_command_function!r} -s {option!r} -d {desc!r}"
 FISH_WITH_COMMANDS_GLOBAL_LONG_OPTION = \
 	"complete -c {name!r} -n {no_command_function!r} -l {option!r} -d {desc!r}"
+FISH_WITH_COMMANDS_GLOBAL_OLD_OPTION = \
+	"complete -c {name!r} -n {no_command_function!r} -o {option!r} -d {desc!r}"
 FISH_WITH_COMMANDS_COMMAND = \
 	"complete -c {name!r} -f -n {no_command_function!r} -a {command!r} -d {desc!r}"
 FISH_WITH_COMMANDS_COMMAND_SHORT_OPTION = \
 	"complete -c {name!r} -A -n '__fish_seen_subcommand_from {command}' -s {option!r} -d {desc!r}"
 FISH_WITH_COMMANDS_COMMAND_LONG_OPTION = \
 	"complete -c {name!r} -A -n '__fish_seen_subcommand_from {command}' -l {option!r} -d {desc!r}"
+FISH_WITH_COMMANDS_COMMAND_OLD_OPTION = \
+	"complete -c {name!r} -A -n '__fish_seen_subcommand_from {command}' -o {option!r} -d {desc!r}"
 
 FISH_WITHOUT_COMMANDS = """
 {option_block}
@@ -229,6 +233,7 @@ FISH_WITHOUT_COMMANDS = """
 
 FISH_WITHOUT_COMMANDS_SHORT_OPTION = "complete -c {name!r} -s {option!r} -d {desc!r}"
 FISH_WITHOUT_COMMANDS_LONG_OPTION = "complete -c {name!r} -l {option!r} -d {desc!r}"
+FISH_WITHOUT_COMMANDS_OLD_OPTION = "complete -c {name!r} -o {option!r} -d {desc!r}"
 
 ZSH_WITH_COMMANDS = """#compdef {name}
 
@@ -301,6 +306,19 @@ ZSH_WITH_COMMANDS_COMMAND = """
 			;;
 """
 
+def _optionStyle(option):
+	"""
+	Tell the style of an option, when it's short '-a' or long '--apt'
+	or old long '-opt' or a command 'show'
+	"""
+	if option.startswith('--'):
+		return 'long'
+	if not option.startswith('-'):
+		return 'commnad'
+	if len(option) > 2:
+		return 'oldlong'
+	return 'short'
+
 def assembleBashWithCommands(name, complete_function, global_options, commands, fullpath = None):
 	command_block = [
 		BASH_WITH_COMMANDS_COMMAND.format(
@@ -334,8 +352,9 @@ def assembleBashWithoutCommands(name, complete_function, options, fullpath = Non
 
 def assembleFishWithCommands(name, no_command_function, global_options, commands, fullpath = None):
 	global_option_block = [
-		(FISH_WITH_COMMANDS_GLOBAL_LONG_OPTION if option.startswith('--') \
-			else FISH_WITH_COMMANDS_GLOBAL_SHORT_OPTION).format(
+		(     FISH_WITH_COMMANDS_GLOBAL_LONG_OPTION  if _optionStyle(option) == 'long'  \
+		 else FISH_WITH_COMMANDS_GLOBAL_SHORT_OPTION if _optionStyle(option) == 'short' \
+		 else FISH_WITH_COMMANDS_GLOBAL_OLD_OPTION).format(
 			name                = name,
 			no_command_function = no_command_function,
 			option              = option.lstrip('-'),
@@ -351,8 +370,9 @@ def assembleFishWithCommands(name, no_command_function, global_options, commands
 		) for comname, command in commands.items()
 	]
 	command_option_block = [
-		(FISH_WITH_COMMANDS_COMMAND_LONG_OPTION if option.startswith('--') \
-			else FISH_WITH_COMMANDS_COMMAND_SHORT_OPTION).format(
+		(     FISH_WITH_COMMANDS_COMMAND_LONG_OPTION  if _optionStyle(option) == 'long'  \
+		 else FISH_WITH_COMMANDS_COMMAND_SHORT_OPTION if _optionStyle(option) == 'short' \
+		 else FISH_WITH_COMMANDS_COMMAND_OLD_OPTION).format(
 			name    = name,
 			command = cmdname,
 			option  = option.lstrip('-'),
@@ -370,8 +390,9 @@ def assembleFishWithCommands(name, no_command_function, global_options, commands
 
 def assembleFishWithoutCommands(name, no_command_function, options, fullpath = None):
 	option_block = [
-		(FISH_WITHOUT_COMMANDS_LONG_OPTION if option.startswith('--') \
-			else FISH_WITHOUT_COMMANDS_SHORT_OPTION).format(
+		(     FISH_WITHOUT_COMMANDS_LONG_OPTION  if _optionStyle(option) == 'long'  \
+		 else FISH_WITHOUT_COMMANDS_SHORT_OPTION if _optionStyle(option) == 'short' \
+		 else FISH_WITHOUT_COMMANDS_OLD_OPTION).format(
 			name   = name,
 			option = option.lstrip('-'),
 			desc   = desc

@@ -38,15 +38,21 @@ class Command:
 		"""
 		Add option to a command
 		"""
-		self.options[opt] = desc
+		if isinstance(opt, list):
+			for option in opt:
+				self.options[option] = desc
+		else:
+			self.options[opt] = desc
 
 class Completions(Command):
 	"""Completions class"""
-	def __init__(self, name = None, desc = None, options = None, fullpath = None):
+	def __init__(self, name = None, desc = None, options = None, inherit = True, fullpath = None):
 		super(Completions, self).__init__(name, desc, options)
-		self.name = name or sys.argv[0]
-		self.desc = desc or ''
+		self.name     = name or sys.argv[0]
+		self.desc     = desc or ''
+		self.inherit  = True
 		self.commands = {}
+		self.inherit  = inherit
 		self.uid      = None
 		self.fullpath = fullpath and path.realpath(fullpath)
 
@@ -207,12 +213,19 @@ class Completions(Command):
 			'_%s_%s_complete' % (self.availname, self.uid),
 			self.options, self.fullpath)
 
+	def _inherit(self):
+		if not self.inherit:
+			return
+		for _, command in self.commands.items():
+			command.options.update(self.options)
+
 	def generate(self, shell, auto = False):
 		"""Generate the completion code"""
 		self.uid = str(uuid.uuid3(uuid.NAMESPACE_DNS, self.name)).split('-')[-1]
 		if shell == 'auto':
 			shell = re.sub(r'[^\w].*', '', path.basename(environ['SHELL']))
 			return self.generate(shell, auto)
+		self._inherit()
 		if shell == 'fish':
 			source = self._generateFish()
 			if not auto:
@@ -249,12 +262,16 @@ class Completions(Command):
 		for key, val in program.get('options', {}).items():
 			self.addOption(key, val)
 
+		self.inherit = dict_var.get('inherit', True)
 		commands = dict_var.get('commands', '')
 		for key, val in commands.items():
+			if not isinstance(val, dict):
+				val = {'desc': val}
+			options = val.get('options', {})
 			self.addCommand(
-				name = key,
-				desc = val.get('desc') or '',
-				options = val.get('options', {})
+				name    = key,
+				desc    = val.get('desc') or '',
+				options = options
 			)
 
 	def loadFile(self, compfile):
@@ -266,6 +283,7 @@ class Completions(Command):
 def main():
 	"""Entry point of the script"""
 	from pyparam import commands
+	commands._desc = 'Shell completions for your program made easy.'
 	commands._.shell          = 'auto'
 	commands._.shell.desc     = [
 		'The shell, one of bash, fish, zsh and auto.',
@@ -277,8 +295,8 @@ def main():
 		'Bash: `~/bash_completion.d/<name>.bash-completion`',
 		'  Also try to source it in ~/.bash_completion',
 		'Fish: `~/.config/fish/completions/<name>.fish`',
-		'Zsh:  `~/.zfunc/_<name>`',
-		'  `fpath+=~/.zfunc` is ensured to add before `compinit`'
+		'Zsh:  `~/.zsh-completions/_<name>`',
+		'  `fpath+=~/.zsh-completions` is ensured to add before `compinit`'
 	]
 	commands._.a                  = commands._.auto
 	commands._.s                  = commands._.shell
@@ -286,27 +304,26 @@ def main():
 	commands.self._hbald          = False
 	commands.generate             = 'Generate completions from configuration files'
 	commands.generate.config.desc = [ # pylint: disable=no-member
-		'The configuration file. Scheme should be aligned following json data:',
-		'{',
-		'	"program": {',
-		'		"name": "program",',
-		'		"desc": "A program",',
-		'		"options": {',
-		'			"-o": "Output file",',
-		'			"--output": "Long version of -o"',
-		'		}',
-		'	},',
-		'	"commands": {',
-		'		"list": {',
-		'			"desc": "List commands",',
-		'			"options": {',
-		'				"-a": "List all commands",',
-		'				"--all": "List all commands"',
-		'			}',
-		'		}',
-		'	}',
-		'}',
-		'',
+		'The configuration file. Scheme should be aligned following schema:',
+		'```yaml',
+		'program:',
+		'    name: completions',
+		'    desc: Shell completions for your program made easy.',
+		'    path: /absolute/path/to/completions',
+		'    inherit: true',
+		'    options:',
+		'        -s: The shell, one of bash, fish, zsh and auto.',
+		'        --shell: The shell, one of bash, fish, zsh and auto.',
+		'        -a: Automatically write completions to destination file.',
+		'        --auto: Automatically write completions to destination file.',
+		'commands:',
+		'    self: Generate completions for myself.',
+		'    generate:',
+		'        desc: Generate completions from configuration files.',
+		'        options:',
+		'            -c: The configuration file to load.',
+		'            --config: The configuration file to load.',
+		'```',
 		'Configuration file that is supported by `python-simpleconf` is supported.'
 	]
 	commands.generate.config.required = True       # pylint: disable=no-member
