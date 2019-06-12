@@ -1,8 +1,12 @@
+[build-system]
+requires = [ "poetry>=0.12",]
+build-backend = "poetry.masonry.api"
+
 [tool.poetry]
 name = "completions"
-version = "0.0.2"
+version = "0.0.3"
 description = "Shell completions made easy."
-authors = ["pwwang <pwwang@pwwang.com>"]
+authors = [ "pwwang <pwwang@pwwang.com>",]
 license = "MIT"
 readme = "README.md"
 homepage = "https://github.com/pwwang/completions"
@@ -16,7 +20,3 @@ pyparam = "^0.1.3"
 
 [tool.poetry.scripts]
 completions = "completions:main"
-
-[build-system]
-requires = ["poetry>=0.12"]
-build-backend = "poetry.masonry.api"
