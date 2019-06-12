@@ -1,7 +1,5 @@
 # completions
 
-Shell completions for your program made easy.
-
 [![pypi][1]][2] [![tag][3]][4] [![travis][5]][6] [![codacy quality][7]][8] ![pyver][11]
 
 Shell completions for your program made easy.
@@ -113,7 +111,7 @@ completions.generate(shell = 'fish', auto = False)
 [4]: https://github.com/pwwang/completions
 [5]: https://img.shields.io/travis/pwwang/completions.svg?style=flat-square
 [6]: https://travis-ci.org/pwwang/completions
-[7]: https://img.shields.io/codacy/grade/completions.svg?style=flat-square
+[7]: https://img.shields.io/codacy/grade/98c8035ccd4c4f97b454086271a1b1c1.svg?style=flat-square
 [8]: https://app.codacy.com/project/pwwang/completions/dashboard
 [11]: https://img.shields.io/pypi/pyversions/completions.svg?style=flat-square
 [12]: https://github.com/pwwang/simpleconf
