@@ -1,9 +1,5 @@
 sudo: false
 language: python
-python:
-  - "3.4"
-  - "3.5"
-  - "3.6"
 matrix:
   include:
     - python: 3.7
@@ -11,15 +7,8 @@ matrix:
 before_install:
   - pip install poetry
 install:
-  - poetry install -v
-  - pip install tox-travis
-  - pip install codacy-coverage
-script: 
-  - pytest tests/
-after_success: |
-  if [ "$TRAVIS_PYTHON_VERSION" == "3.7" ]; then
-    python-codacy-coverage -r .coverage.xml
-  fi
+script:
+  - echo 'No tests yet.'
 deploy:
   provider: script
   script: poetry publish --build -u $PYPI_USER -p $PYPI_PASSWORD
