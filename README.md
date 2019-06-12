@@ -117,5 +117,5 @@ completions.generate(shell = 'fish', auto = False)
 [8]: https://app.codacy.com/project/pwwang/completions/dashboard
 [11]: https://img.shields.io/pypi/pyversions/completions.svg?style=flat-square
 [12]: https://github.com/pwwang/simpleconf
-[13]: https://raw.githubusercontent.com/pwwang/pyparam/master/examples/command.png
-[14]: https://raw.githubusercontent.com/pwwang/pyparam/master/examples/option.png
+[13]: https://raw.githubusercontent.com/pwwang/completions/master/examples/command.png
+[14]: https://raw.githubusercontent.com/pwwang/completions/master/examples/option.png
