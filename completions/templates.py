@@ -1,192 +1,93 @@
-
-BASH_WITH_COMMANDS = """
+BASH_INSTALL_COMPLETION = """
 # in case is not defined
 if [[ $(type -t _get_comp_words_by_ref) == "" ]]; then
-	_get_comp_words_by_ref() {{
-		local exclude flag i OPTIND=1
-		local cur cword words=()
-		local upargs=() upvars=() vcur vcword vprev vwords
-
-		while getopts "c:i:n:p:w:" flag "$@"; do
-			case $flag in
-				c) vcur=$OPTARG ;;
-				i) vcword=$OPTARG ;;
-				n) exclude=$OPTARG ;;
-				p) vprev=$OPTARG ;;
-				w) vwords=$OPTARG ;;
-			esac
-		done
-		while [[ $# -ge $OPTIND ]]; do
-			case ${{!OPTIND}} in
-				cur)   vcur=cur ;;
-				prev)  vprev=prev ;;
-				cword) vcword=cword ;;
-				words) vwords=words ;;
-				*) echo "bash_completion: $FUNCNAME: \\`${{!OPTIND}}':" \\
-					"unknown argument" >&2; return 1 ;;
-			esac
-			(( OPTIND += 1 ))
-		done
-
-		__get_cword_at_cursor_by_ref "$exclude" words cword cur
-
-		[[ $vcur   ]] && {{ upvars+=("$vcur"  ); upargs+=(-v $vcur   "$cur"  ); }}
-		[[ $vcword ]] && {{ upvars+=("$vcword"); upargs+=(-v $vcword "$cword"); }}
-		[[ $vprev && $cword -ge 1 ]] && {{ upvars+=("$vprev" ); upargs+=(-v $vprev
-			"${{words[cword - 1]}}"); }}
-		[[ $vwords ]] && {{ upvars+=("$vwords"); upargs+=(-a${{#words[@]}} $vwords
-			"${{words[@]}}"); }}
-
-		(( ${{#upvars[@]}} )) && local "${{upvars[@]}}" && _upvars "${{upargs[@]}}"
-	}}
+    echo "[completions] bash-completion is not installed. Install it first."
+    exit 1
 fi
+"""
 
-if [[ $(type -t __ltrim_colon_completions) == "" ]]; then
-	__ltrim_colon_completions() {{
-		if [[ "$1" == *:* && "$COMP_WORDBREAKS" == *:* ]]; then
-			# Remove colon-word prefix from COMPREPLY items
-			local colon_word=${{1%"${{1##*:}}"}}
-			local i=${{#COMPREPLY[*]}}
-			while [[ $((--i)) -ge 0 ]]; do
-				COMPREPLY[$i]=${{COMPREPLY[$i]#"$colon_word"}}
-			done
-		fi
-	}}
-fi
+BASH_WITH_COMMANDS = BASH_INSTALL_COMPLETION + """
 
 {complete_function}() {{
-	local cur script coms opts com
-	COMPREPLY=()
-	_get_comp_words_by_ref -n : cur words
+    local cur script coms opts com
+    COMPREPLY=()
+    _get_comp_words_by_ref -n : cur words
 
-	# for an alias, get the real script behind it
-	if [[ $(type -t ${{words[0]}}) == "alias" ]]; then
-		script=$(alias ${{words[0]}} | sed -E "s/alias ${{words[0]}}='(.*)'/\\1/")
-	else
-		script=${{words[0]}}
-	fi
+    # for an alias, get the real script behind it
+    if [[ $(type -t ${{words[0]}}) == "alias" ]]; then
+        script=$(alias ${{words[0]}} | sed -E "s/alias ${{words[0]}}='(.*)'/\\1/")
+    else
+        script=${{words[0]}}
+    fi
 
-	# lookup for command
-	for word in ${{words[@]:1}}; do
-		if [[ $word != -* ]]; then
-			com=$word
-			break
-		fi
-	done
+    # lookup for command
+    for word in ${{words[@]:1}}; do
+        if [[ $word != -* ]]; then
+            com=$word
+            break
+        fi
+    done
 
-	# completing for an option
-	if [[ ${{cur}} == -* ]] ; then
-		opts="{global_options}"
+    # completing for an option
+    if [[ ${{cur}} == -* ]] ; then
+        opts="{global_options}"
 
-		case "$com" in
+        case "$com" in
 {command_block}
-		esac
+        esac
 
-		COMPREPLY=($(compgen -W "${{opts}}" -- ${{cur}}))
-		__ltrim_colon_completions "$cur"
+        COMPREPLY=($(compgen -W "${{opts}}" -- ${{cur}}))
+        __ltrim_colon_completions "$cur"
 
-		return 0;
-	fi
+        return 0;
+    fi
 
-	# completing for a command
-	if [[ $cur == $com ]]; then
-		coms="{commands}"
+    # completing for a command
+    if [[ $cur == $com ]]; then
+        coms="{commands}"
 
-		COMPREPLY=($(compgen -W "${{coms}}" -- ${{cur}}))
-		__ltrim_colon_completions "$cur"
+        COMPREPLY=($(compgen -W "${{coms}}" -- ${{cur}}))
+        __ltrim_colon_completions "$cur"
 
-		return 0
-	fi
+        return 0
+    fi
 }}
 
 {exclude_block}
 """
 
 BASH_WITH_COMMANDS_COMMAND = """
-			({command})
-			opts="${{opts}} {options}"
-			;;
+            ({command})
+            opts="${{opts}} {options}"
+            ;;
 """
 
 BASH_EXECUTE = "complete -o default -F {complete_function!r} {name!r}"
 
 
-BASH_WITHOUT_COMMANDS = """
-# in case is not defined
-if [[ $(type -t _get_comp_words_by_ref) == "" ]]; then
-	_get_comp_words_by_ref() {{
-		local exclude flag i OPTIND=1
-		local cur cword words=()
-		local upargs=() upvars=() vcur vcword vprev vwords
-
-		while getopts "c:i:n:p:w:" flag "$@"; do
-			case $flag in
-				c) vcur=$OPTARG ;;
-				i) vcword=$OPTARG ;;
-				n) exclude=$OPTARG ;;
-				p) vprev=$OPTARG ;;
-				w) vwords=$OPTARG ;;
-			esac
-		done
-		while [[ $# -ge $OPTIND ]]; do
-			case ${{!OPTIND}} in
-				cur)   vcur=cur ;;
-				prev)  vprev=prev ;;
-				cword) vcword=cword ;;
-				words) vwords=words ;;
-				*) echo "bash_completion: $FUNCNAME: \\`${{!OPTIND}}':" \\
-					"unknown argument" >&2; return 1 ;;
-			esac
-			(( OPTIND += 1 ))
-		done
-
-		__get_cword_at_cursor_by_ref "$exclude" words cword cur
-
-		[[ $vcur   ]] && {{ upvars+=("$vcur"  ); upargs+=(-v $vcur   "$cur"  ); }}
-		[[ $vcword ]] && {{ upvars+=("$vcword"); upargs+=(-v $vcword "$cword"); }}
-		[[ $vprev && $cword -ge 1 ]] && {{ upvars+=("$vprev" ); upargs+=(-v $vprev
-			"${{words[cword - 1]}}"); }}
-		[[ $vwords ]] && {{ upvars+=("$vwords"); upargs+=(-a${{#words[@]}} $vwords
-			"${{words[@]}}"); }}
-
-		(( ${{#upvars[@]}} )) && local "${{upvars[@]}}" && _upvars "${{upargs[@]}}"
-	}}
-fi
-
-if [[ $(type -t __ltrim_colon_completions) == "" ]]; then
-	__ltrim_colon_completions() {{
-		if [[ "$1" == *:* && "$COMP_WORDBREAKS" == *:* ]]; then
-			# Remove colon-word prefix from COMPREPLY items
-			local colon_word=${{1%"${{1##*:}}"}}
-			local i=${{#COMPREPLY[*]}}
-			while [[ $((--i)) -ge 0 ]]; do
-				COMPREPLY[$i]=${{COMPREPLY[$i]#"$colon_word"}}
-			done
-		fi
-	}}
-fi
+BASH_WITHOUT_COMMANDS = BASH_INSTALL_COMPLETION + """
 
 {complete_function}() {{
-	local cur script coms opts com
-	COMPREPLY=()
-	_get_comp_words_by_ref -n : cur words
+    local cur script coms opts com
+    COMPREPLY=()
+    _get_comp_words_by_ref -n : cur words
 
-	# for an alias, get the real script behind it
-	if [[ $(type -t ${{words[0]}}) == "alias" ]]; then
-		script=$(alias ${{words[0]}} | sed -E "s/alias ${{words[0]}}='(.*)'/\\1/")
-	else
-		script=${{words[0]}}
-	fi
+    # for an alias, get the real script behind it
+    if [[ $(type -t ${{words[0]}}) == "alias" ]]; then
+        script=$(alias ${{words[0]}} | sed -E "s/alias ${{words[0]}}='(.*)'/\\1/")
+    else
+        script=${{words[0]}}
+    fi
 
-	# completing for an option
-	if [[ ${{cur}} == -* ]] ; then
-		opts="{options}"
+    # completing for an option
+    if [[ ${{cur}} == -* ]] ; then
+        opts="{options}"
 
-		COMPREPLY=($(compgen -W "${{opts}}" -- ${{cur}}))
-		__ltrim_colon_completions "$cur"
+        COMPREPLY=($(compgen -W "${{opts}}" -- ${{cur}}))
+        __ltrim_colon_completions "$cur"
 
-		return 0;
-	fi
+        return 0;
+    fi
 }}
 
 {exclude_block}
@@ -194,12 +95,12 @@ fi
 
 FISH_WITH_COMMANDS = """
 function {no_command_function}
-		for i in (commandline -opc)
-				if contains -- $i self generate
-						return 1
-				end
-		end
-		return 0
+    for i in (commandline -opc)
+            if contains -- $i {commands}
+                    return 1
+            end
+    end
+    return 0
 end
 
 # global options
@@ -212,67 +113,57 @@ end
 {command_option_block}
 """
 
-FISH_WITH_COMMANDS_GLOBAL_SHORT_OPTION = \
-	"complete -c {name!r} -n {no_command_function!r} -s {option!r} -d {desc!r}"
-FISH_WITH_COMMANDS_GLOBAL_LONG_OPTION = \
-	"complete -c {name!r} -n {no_command_function!r} -l {option!r} -d {desc!r}"
-FISH_WITH_COMMANDS_GLOBAL_OLD_OPTION = \
-	"complete -c {name!r} -n {no_command_function!r} -o {option!r} -d {desc!r}"
+FISH_WITH_COMMANDS_GLOBAL_OPTION = \
+    "complete -c {name!r} -n {no_command_function!r} -{optype} {option!r} -d {desc!r}"
 FISH_WITH_COMMANDS_COMMAND = \
-	"complete -c {name!r} -f -n {no_command_function!r} -a {command!r} -d {desc!r}"
-FISH_WITH_COMMANDS_COMMAND_SHORT_OPTION = \
-	"complete -c {name!r} -A -n '__fish_seen_subcommand_from {command}' -s {option!r} -d {desc!r}"
-FISH_WITH_COMMANDS_COMMAND_LONG_OPTION = \
-	"complete -c {name!r} -A -n '__fish_seen_subcommand_from {command}' -l {option!r} -d {desc!r}"
-FISH_WITH_COMMANDS_COMMAND_OLD_OPTION = \
-	"complete -c {name!r} -A -n '__fish_seen_subcommand_from {command}' -o {option!r} -d {desc!r}"
+    "complete -c {name!r} -f -n {no_command_function!r} -a {command!r} -d {desc!r}"
+FISH_WITH_COMMANDS_COMMAND_OPTION = \
+    "complete -c {name!r} -A -n '__fish_seen_subcommand_from {command}' -{optype} {option!r} -d {desc!r}"
 
 FISH_WITHOUT_COMMANDS = """
 {option_block}
 """
 
-FISH_WITHOUT_COMMANDS_SHORT_OPTION = "complete -c {name!r} -s {option!r} -d {desc!r}"
-FISH_WITHOUT_COMMANDS_LONG_OPTION = "complete -c {name!r} -l {option!r} -d {desc!r}"
-FISH_WITHOUT_COMMANDS_OLD_OPTION = "complete -c {name!r} -o {option!r} -d {desc!r}"
+FISH_WITHOUT_COMMANDS_OPTION = "complete -c {name!r} -{optype} {option!r} -d {desc!r}"
 
 ZSH_WITH_COMMANDS = """#compdef {name}
 
 {complete_function}() {{
-	local state com cur
+    local state com cur
 
-	cur=${{words[${{#words[@]}}]}}
+    cur=${{words[${{#words[@]}}]}}
 
-	# lookup for command
-	for word in ${{words[@]:1}}; do
-		if [[ $word != -* ]]; then
-			com=$word
-			break
-		fi
-	done
+    # lookup for command
+    for word in ${{words[@]:1}}; do
+        if [[ $word != -* ]]; then
+            com=$word
+            break
+        fi
+    done
 
-	if [[ ${{cur}} == -* ]]; then
-		state="option"
-		opts=({global_options})
-	elif [[ $cur == $com ]]; then
-		state="command"
-		coms=({commands})
-	fi
+    if [[ ${{cur}} == -* ]]; then
+        state="option"
+        opts=({global_options})
+    elif [[ $cur == $com ]]; then
+        state="command"
+        coms=({commands})
+    fi
 
-	case $state in
-		(command)
-			_describe 'command' coms
-		;;
-		(option)
-			case "$com" in
+    case $state in
+        (command)
+            _describe 'command' coms
+        ;;
+        (option)
+            case "$com" in
 {command_block}
-			esac
+            esac
 
-			_describe 'option' opts
-		;;
-		*)
-			# fallback to file completion
-			_arguments '*:file:_files'
-	esac
+            _describe 'option' opts
+        ;;
+        *)
+            # fallback to file completion
+            _arguments '*:file:_files'
+    esac
 }}
 
 {complete_function} "$@"
@@ -282,18 +173,18 @@ compdef {complete_function} {fullpath}
 ZSH_WITHOUT_COMMANDS = """#compdef {name}
 
 {complete_function}() {{
-	local cur
+    local cur
 
-	cur=${{words[${{#words[@]}}]}}
+    cur=${{words[${{#words[@]}}]}}
 
-	if [[ ${{cur}} == -* ]]; then
-		state="option"
-		opts=({options})
-		_describe 'option' opts
-	else
-		# fallback to file completion
-		_arguments '*:file:_files'
-	fi
+    if [[ ${{cur}} == -* ]]; then
+        state="option"
+        opts=({options})
+        _describe 'option' opts
+    else
+        # fallback to file completion
+        _arguments '*:file:_files'
+    fi
 }}
 
 {complete_function} "$@"
@@ -301,23 +192,29 @@ compdef {complete_function} {fullpath}
 """
 
 ZSH_WITH_COMMANDS_COMMAND = """
-			({command})
-			opts=({options})
-			;;
+            ({command})
+            opts=({options})
+            ;;
 """
 
 def _optionStyle(option):
 	"""
-	Tell the style of an option, when it's short '-a' or long '--apt'
-	or old long '-opt' or a command 'show'
+	Tell the style of an option.
+	1. '-' or '--': naked   (a)
+	2. '--abc'    : long    (l)
+	3. 'abc'      : commnad (a)
+	4. '-abc'     : oldlong (o)
+	5. '-a'       : short   (s)
 	"""
+	if option in ('-', '--'):
+		return 'a'
 	if option.startswith('--'):
-		return 'long'
+		return 'l'
 	if not option.startswith('-'):
-		return 'commnad'
+		return 'f -a'
 	if len(option) > 2:
-		return 'oldlong'
-	return 'short'
+		return 'o'
+	return 's'
 
 def assembleBashWithCommands(name, complete_function, global_options, commands, fullpath = None):
 	command_block = [
@@ -328,8 +225,8 @@ def assembleBashWithCommands(name, complete_function, global_options, commands, 
 	]
 	exclude_block = [BASH_EXECUTE.format(complete_function = complete_function, name = name)]
 	if fullpath:
-		exclude_block.append([
-			BASH_EXECUTE.format(complete_function = complete_function, name = fullpath)])
+		exclude_block.append(
+			BASH_EXECUTE.format(complete_function = complete_function, name = fullpath))
 
 	return BASH_WITH_COMMANDS.format(
 		complete_function = complete_function,
@@ -352,12 +249,12 @@ def assembleBashWithoutCommands(name, complete_function, options, fullpath = Non
 
 def assembleFishWithCommands(name, no_command_function, global_options, commands, fullpath = None):
 	global_option_block = [
-		(     FISH_WITH_COMMANDS_GLOBAL_LONG_OPTION  if _optionStyle(option) == 'long'  \
-		 else FISH_WITH_COMMANDS_GLOBAL_SHORT_OPTION if _optionStyle(option) == 'short' \
-		 else FISH_WITH_COMMANDS_GLOBAL_OLD_OPTION).format(
+		FISH_WITH_COMMANDS_GLOBAL_OPTION.format(
 			name                = name,
 			no_command_function = no_command_function,
-			option              = option.lstrip('-'),
+			optype              = _optionStyle(option),
+			option              = option.lstrip('-') \
+				if _optionStyle(option) != 'a' else option,
 			desc                = desc
 		) for option, desc in global_options.items()
 	]
@@ -370,12 +267,12 @@ def assembleFishWithCommands(name, no_command_function, global_options, commands
 		) for comname, command in commands.items()
 	]
 	command_option_block = [
-		(     FISH_WITH_COMMANDS_COMMAND_LONG_OPTION  if _optionStyle(option) == 'long'  \
-		 else FISH_WITH_COMMANDS_COMMAND_SHORT_OPTION if _optionStyle(option) == 'short' \
-		 else FISH_WITH_COMMANDS_COMMAND_OLD_OPTION).format(
+		FISH_WITH_COMMANDS_COMMAND_OPTION.format(
 			name    = name,
 			command = cmdname,
-			option  = option.lstrip('-'),
+			optype  = _optionStyle(option),
+			option  = option.lstrip('-') \
+				if _optionStyle(option) != 'a' else option,
 			desc    = desc
 		)
 		for cmdname, command in commands.items()
@@ -384,17 +281,18 @@ def assembleFishWithCommands(name, no_command_function, global_options, commands
 	return FISH_WITH_COMMANDS.format(
 		no_command_function  = no_command_function,
 		global_option_block  = '\n'.join(global_option_block),
+		commands             = ' '.join(repr(cmd) for cmd in commands),
 		command_block        = '\n'.join(command_block),
 		command_option_block = '\n'.join(command_option_block),
 	)
 
 def assembleFishWithoutCommands(name, no_command_function, options, fullpath = None):
 	option_block = [
-		(     FISH_WITHOUT_COMMANDS_LONG_OPTION  if _optionStyle(option) == 'long'  \
-		 else FISH_WITHOUT_COMMANDS_SHORT_OPTION if _optionStyle(option) == 'short' \
-		 else FISH_WITHOUT_COMMANDS_OLD_OPTION).format(
+		FISH_WITHOUT_COMMANDS_OPTION.format(
 			name   = name,
-			option = option.lstrip('-'),
+			optype = _optionStyle(option),
+			option = option.lstrip('-') \
+				if _optionStyle(option) != 'a' else option,
 			desc   = desc
 		)
 		for option, desc in options.items()
