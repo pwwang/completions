@@ -4,7 +4,7 @@ build-backend = "poetry.masonry.api"
 
 [tool.poetry]
 name = "completions"
-version = "0.0.4"
+version = "0.0.5"
 description = "Shell completions made easy."
 authors = [ "pwwang <pwwang@pwwang.com>",]
 license = "MIT"
