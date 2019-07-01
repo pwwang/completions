@@ -2,6 +2,8 @@
 """
 Generate completions for shells
 """
+__version__ = "0.0.4"
+
 import re
 import sys
 import uuid
