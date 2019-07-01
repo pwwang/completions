@@ -133,4 +133,5 @@ dmypy.json
 # poetry
 poetry.lock
 
+*.bak
 # End of https://www.gitignore.io/api/python
