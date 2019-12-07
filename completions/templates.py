@@ -1,3 +1,5 @@
+"""Templates for each shell completion file"""
+
 BASH_INSTALL_COMPLETION = """
 # in case is not defined
 if [[ $(type -t _get_comp_words_by_ref) == "" ]]; then
@@ -117,8 +119,8 @@ FISH_WITH_COMMANDS_GLOBAL_OPTION = \
     "complete -c {name!r} -n {no_command_function!r} -{optype} {option!r} -d {desc!r}"
 FISH_WITH_COMMANDS_COMMAND = \
     "complete -c {name!r} -f -n {no_command_function!r} -a {command!r} -d {desc!r}"
-FISH_WITH_COMMANDS_COMMAND_OPTION = \
-    "complete -c {name!r} -A -n '__fish_seen_subcommand_from {command}' -{optype} {option!r} -d {desc!r}"
+FISH_WITH_COMMANDS_COMMAND_OPTION = "complete -c {name!r} -A -n " + \
+	"'__fish_seen_subcommand_from {command}' -{optype} {option!r} -d {desc!r}"
 
 FISH_WITHOUT_COMMANDS = """
 {option_block}
@@ -217,6 +219,7 @@ def _optionStyle(option):
 	return 's'
 
 def assembleBashWithCommands(name, complete_function, global_options, commands, fullpath = None):
+	"""Assemble bash completions with commands"""
 	command_block = [
 		BASH_WITH_COMMANDS_COMMAND.format(
 			command = command.name,
@@ -237,6 +240,7 @@ def assembleBashWithCommands(name, complete_function, global_options, commands, 
 	)
 
 def assembleBashWithoutCommands(name, complete_function, options, fullpath = None):
+	"""Assemble bash completions without commands"""
 	exclude_block = [BASH_EXECUTE.format(complete_function = complete_function, name = name)]
 	if fullpath:
 		exclude_block.append([
@@ -247,7 +251,9 @@ def assembleBashWithoutCommands(name, complete_function, options, fullpath = Non
 		exclude_block     = '\n'.join(exclude_block)
 	)
 
-def assembleFishWithCommands(name, no_command_function, global_options, commands, fullpath = None):
+def assembleFishWithCommands(name, no_command_function,
+	global_options, commands, fullpath = None): # pylint: disable=unused-argument
+	"""Assemble fish completions with commands"""
 	global_option_block = [
 		FISH_WITH_COMMANDS_GLOBAL_OPTION.format(
 			name                = name,
@@ -286,7 +292,9 @@ def assembleFishWithCommands(name, no_command_function, global_options, commands
 		command_option_block = '\n'.join(command_option_block),
 	)
 
-def assembleFishWithoutCommands(name, no_command_function, options, fullpath = None):
+def assembleFishWithoutCommands(name, no_command_function,
+	options, fullpath = None): # pylint: disable=unused-argument
+	"""Assemble fish completions without commands"""
 	option_block = [
 		FISH_WITHOUT_COMMANDS_OPTION.format(
 			name   = name,
@@ -307,6 +315,7 @@ def _escapeColon(name):
 	return name.replace(':', '\\:')
 
 def assembleZshWithCommands(name, complete_function, global_options, commands, fullpath = None):
+	"""Assemble zsh completions with commands"""
 	command_block = [
 		ZSH_WITH_COMMANDS_COMMAND.format(
 			command = comname,
@@ -326,6 +335,7 @@ def assembleZshWithCommands(name, complete_function, global_options, commands, f
 	)
 
 def assembleZshWithoutCommands(name, complete_function, options, fullpath = None):
+	"""Assemble zsh completions without commands"""
 	return ZSH_WITHOUT_COMMANDS.format(
 		name              = name,
 		fullpath          = fullpath,
