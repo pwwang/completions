@@ -24,7 +24,7 @@ if os.path.exists(readme_path):
 setup(
     long_description=readme,
     name='completions',
-    version='0.0.5',
+    version='0.0.7',
     description='Shell completions made easy.',
     python_requires='==3.*,>=3.4.0',
     project_urls={"homepage": "https://github.com/pwwang/completions", "repository": "https://github.com/pwwang/completions"},
