@@ -24,7 +24,7 @@ if os.path.exists(readme_path):
 setup(
     long_description=readme,
     name='completions',
-    version='0.0.7',
+    version='0.0.8',
     description='Shell completions made easy.',
     python_requires='==3.*,>=3.4.0',
     project_urls={"homepage": "https://github.com/pwwang/completions", "repository": "https://github.com/pwwang/completions"},
@@ -34,6 +34,6 @@ setup(
     entry_points={"console_scripts": ["completions = completions:main"]},
     packages=['completions'],
     package_dir={"": "."},
-    package_data={},
+    package_data={"completions": ["*.bak"]},
     install_requires=['colorama', 'pyparam', 'python-simpleconf'],
 )
