@@ -14,8 +14,7 @@ repository = "https://github.com/pwwang/completions"
 
 [tool.poetry.dependencies]
 python = "^3.4"
-colorama = "*"
-python-simpleconf = "*"
+rich = "^6"
 pyparam = "*"
 
 [tool.poetry.scripts]

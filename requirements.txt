@@ -1,3 +1,2 @@
-colorama
 pyparam
-python-simpleconf
+rich==6.*,>=6.0.0
