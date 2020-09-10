@@ -1,3 +1,7 @@
+> # This is not being maintained.
+
+> # Please check: https://github.com/pwwang/pyparam for shell completions.
+
 # completions
 
 [![pypi][1]][2] [![tag][3]][4] [![travis][5]][6] [![codacy quality][7]][8] ![pyver][11]
